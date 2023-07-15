@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# Demandez le nom du fichier sans l'extension
+read -p "Enter the name of the file without extension: " filename
+
+mkdir tmp
+
+# Assemble le fichier source
+nasm -f elf64 -o tmp/${filename}.o srcs/${filename}.asm
+
+# Lie l'objet à une exécutable
+ld -o binaries/${filename} tmp/${filename}.o
+
+# Supprime le fichier objet intermédiaire
+rm tmp/${filename}.o
+
+# Rend l'exécutable... exécutable
+chmod +x binaries/${filename}
+
