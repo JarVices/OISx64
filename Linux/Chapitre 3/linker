@@ -1,0 +1,2 @@
+#!/bin/bash
+nasm -O0 -f bin -o linux_pe_from_scratch.exe linux_pe_from_scratch.asm

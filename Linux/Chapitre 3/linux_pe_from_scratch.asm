@@ -1,0 +1,302 @@
+; linux_pe_from_scratch.asm
+bits 64
+
+TEXT_START_RVA	EQU 0x1000
+DATA_START_RVA	EQU 0x2000
+IDATA_START_RVA	EQU 0x3000
+TEXT_SIZE_RVA	EQU 0x1000
+DATA_SIZE_RVA	EQU 0x1000
+IDATA_SIZE_RVA	EQU 0x1000
+
+TEXT_START_ENTRYPOINT_RVA EQU TEXT_START_RVA + ENTRYPOINT - TEXT_START
+SIZE_OF_IMAGE EQU IDATA_START_RVA + IDATA_SIZE_RVA
+
+IMAGE_BASE EQU 0x0000000000400000
+
+FILE_START:
+DOS_HEADER:
+	DW 'MZ'		; e_magic
+	DW 0x0090	; e_cblp
+	DW 0x0003	; e_cp
+	DW 0x0000	; e_crlc
+	DW 0x0004	; e_cparhdr
+	DW 0x0000	; e_minalloc
+	DW 0xFFFF	; e_maxalloc
+	DW 0x0000	; e_ss
+	DW 0x00B8	; e_sp
+	DW 0x0000	; e_csum
+	DW 0x0000	; e_ip
+	DW 0x0000	; e_cs
+	DW 0x0040	; e_lfarlc
+	DW 0x0000	; e_ovno
+	DW 0x0000	; e_res
+	DW 0x0000
+	DW 0x0000
+	DW 0x0000
+	DW 0x0000	; e_oemid
+	DW 0x0000	; e_oeminfo
+	DW 0x0000	; e_res
+	DW 0x0000
+	DW 0x0000
+	DW 0x0000
+	DW 0x0000
+	DW 0x0000
+	DW 0x0000
+	DW 0x0000
+	DW 0x0000
+	DW 0x0000
+	DD 0x00000080	; e_lfanew
+
+DOS_STUB:
+	DB 0x0E, 0x1F, 0xBA, 0x0E, 0x00, 0xB4, 0x09, 0xCD, 0x21
+	DB 0xB8, 0x01, 0x4C, 0xCD, 0x21
+	DB "This program cannot be run in DOS mode."
+	DB 0x0D, 0x0D, 0x0A
+	DB 0x24, 0x00
+	DB 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+
+NT_HEADERS:
+	DB 'PE', 0, 0	; Signature
+
+FILE_HEADER:
+	DW 0x8664	; Machine
+	DW 0x0003	; NumberOfSections
+	DD 0x6373B9D1	; TimeDateStamp
+	DD 0x00000000	; PointerToSymbolTable
+	DD 0x00000000 	; NumberOfSymbols
+	DW OPTIONAL_HEADER_END - OPTIONAL_HEADER_START ; SizeOfOptionalHeader
+	DW 0x0202	; Characteristics
+	
+; PE OPTIONAL HEADER
+OPTIONAL_HEADER_START:
+	DW 0x020b		; Magic
+	DB 0x02			; MajorLinkerVersion
+	DB 0x20			; MinorLinkerVersion
+	DD TEXT_SIZE_RVA	; SizeOfCode
+	DD DATA_SIZE_RVA	; SizeOfInitializedData
+	DD 0x00000000		; SizeOfUnitializedData
+	DD TEXT_START_ENTRYPOINT_RVA ; AddressOfEntryPoint
+	DD TEXT_START_RVA	; BaseOfCode
+	dq IMAGE_BASE		; ImageBase
+	DD 0x00001000		; SectionAlignment (4096 bytes = default page size)
+	DD 0x00000200		; FileAlignment (512 bytes = default)
+	DW 0x0004		; MajorOperatingSystemVersion
+	DW 0x0000		; MinorOperatingSystemVersion
+	DW 0x0000		; MajorImageVersion
+	DW 0x0000		; MinorImageVersion
+	DW 0x0005		; MajorSubsystemVersion
+	DW 0x0002		; MinorSubsystemVersion
+	DD 0x00000000		; Win32VersionValue
+	DD SIZE_OF_IMAGE	; SizeOfImage
+	DD TEXT_START		; SizeOfHeaders
+	DD 0x00000000		; CheckSum
+	DW 0x0003		; Subsystem
+	DW 0x0000		; DllCharacteristics
+	dq 0x0000000000200000	; SizeOfStackReserve
+	dq 0x0000000000001000	; SizeOfStackCommit
+	dq 0x0000000000100000 	; SizeOfHeapReserve
+	dq 0x0000000000001000	; SizeOfHeapCommit
+	DD 0x00000000		; LoaderFlags
+	DD (DATA_DIRECTORY_END - DATA_DIRECTORY_START) / 8 ; NumberOfRvaAndSizes
+	
+DATA_DIRECTORY_START:
+	; EXPORT TABLE
+	DD 0x00000000
+	DD 0x00000000
+	
+	; IMPORT_TABLE
+	DD IDATA_START_RVA
+	DD IMPORT_DIRECTORY_TABLE_END - IMPORT_DIRECTORY_TABLE_START
+
+	; RESOURCE_TABLE
+	DD 0x00000000
+	DD 0x00000000
+	
+	; EXCEPTION TABLE
+	DD 0x00000000
+	DD 0x00000000
+
+	; CERTIFICATE TABLE
+	DD 0x00000000
+	DD 0x00000000
+
+	; BASE RELOCATION TABLE
+	DD 0x00000000
+	DD 0x00000000
+
+	; DEBUG
+	DD 0x00000000
+	DD 0x00000000
+
+	; ARCHITECTURE
+	DD 0x00000000
+	DD 0x00000000
+
+	; GLOBAL PTR
+	DD 0x00000000
+	DD 0x00000000
+
+	; TLS TABLE
+	DD 0x00000000
+	DD 0x00000000
+	
+	; LOAD CONFIG TABLE
+	DD 0x00000000
+	DD 0x00000000
+	
+	; BOUND IMPORT
+	DD 0x00000000
+	DD 0x00000000
+
+	; IMPORT ADDRESS TABLE
+	DD IDATA_START_RVA + IMPORT_LOOKUP_TABLE_START - IDATA_START
+	DD IMPORT_LOOKUP_TABLE_END - IMPORT_LOOKUP_TABLE_START
+	
+	; DELAY IMPORT DESCRIPTOR
+	DD 0x00000000
+	DD 0x00000000
+
+	; CLR RUNTIME HEADER
+	DD 0x00000000
+	DD 0x00000000
+
+	; RESERVED, MUST BE ZERO
+	DD 0x00000000
+	DD 0x00000000
+
+DATA_DIRECTORY_END:
+OPTIONAL_HEADER_END:
+
+SECTION_TABLE:
+TEXT_HEADER_START:
+	DQ '.text'				; Name
+	DD TEXT_SIZE_RVA		; VirtualSize
+	DD TEXT_START_RVA		; VirtualAddress
+	DD TEXT_END - TEXT_START	; SizeOfRawData
+	DD TEXT_START			; PointerToRawData
+	DD 0x00000000			; PointerToRelocations
+	DD 0x00000000			; PointerToLineNumbers
+	DW 0x0000				; NumberOfRelocations
+	DW 0x0000				; NumberOfLineNumbers
+	DD 0x60000020			; Characteristics
+TEXT_HEADER_END:
+
+DATA_HEADER_START:
+	DQ '.data'				; Name
+	DD DATA_SIZE_RVA		; VirtualSize
+	DD DATA_START_RVA		; VirtualAddress
+	DD DATA_END - DATA_START	; SizeOfRawData
+	DD DATA_START			; PointerToRawData
+	DD 0x00000000			; PointerToRelocations
+	DD 0x00000000			; PointerToLineNumbers
+	DW 0x0000				; NumberOfRelocations
+	DW 0x0000				; NumberOfLineNumbers
+	DD 0x40000040			; Characteristics
+DATA_HEADER_END:
+
+IDATA_HEADER_START:
+	DQ '.idata'				; Name
+	DD IDATA_SIZE_RVA		; VirtualSize
+	DD IDATA_START_RVA		; VirtualAddress
+	DD IDATA_END - IDATA_START	; SizeOfRawData
+	DD IDATA_START 			; PointerToRawData
+	DD 0x00000000			; PointerToRelocations
+	DD 0x00000000			; PointerToLineNumbers
+	DW 0x0000				; NumberOfRelocations
+	DW 0x0000				; NumberOfLineNumbers
+	DD 0xC0000040			; Characteristics
+IDATA_HEADER_END:
+
+; PADDING SizeOfHeaders 
+times 0x400 - ($ - FILE_START) DB 0x00
+
+TEXT_START: ; starts at offset 0x400 in file
+ENTRYPOINT:
+	SUB	rsp, 28h ; shadow space
+
+	XOR 	ecx, ecx
+	MOV		rdx, DATA_START_RVA + MessageBoxText - DATA_START + IMAGE_BASE
+	MOV		r8, DATA_START_RVA + MessageBoxCaption - DATA_START + IMAGE_BASE
+	MOV		r9d, 0x104 
+	MOV		rax, TEXT_START_RVA + USER32_MESSAGEBOXA - TEXT_START + IMAGE_BASE
+	CALL 	[rax]
+	
+	MOV		rax, TEXT_START_RVA + KERNEL32_EXITPROCESS - TEXT_START + IMAGE_BASE
+	XOR		rcx, rcx
+	CALL 	[rax]
+TEXT_END:
+	
+times TEXT_SIZE_RVA + 0x400 - ($ - FILE_START) DB 0x00
+
+DATA_START:
+	NAME_KERNEL32_DLL:	DB 'kernel32.dll', 0
+	NAME_USER32_DLL:	DB 'user32.dll', 0
+	MessageBoxText:		DB "PE from scratch", 0
+	MessageBoxCaption:	DB "PE from scratch", 0
+DATA_END:
+
+times DATA_SIZE_RVA + TEXT_SIZE_RVA + 0x400 - ($ - FILE_START) DB 0x00
+
+IDATA_START: 	; starts at offset 0x3400 in file
+IMPORT_DIRECTORY_TABLE_START:	; array, 20 bytes per entry, one for each DLL
+	
+	; kernel32.dll
+	DD IDATA_START_RVA + KERNEL32_LOOKUP_TABLE_START - IDATA_START
+	DD 0x00000000
+	DD 0x00000000
+	DD DATA_START_RVA + NAME_KERNEL32_DLL - DATA_START
+	DD IDATA_START_RVA + KERNEL32_LOOKUP_TABLE_START - IDATA_START
+	
+	; user32.dll
+	DD IDATA_START_RVA + USER32_LOOKUP_TABLE_START - IDATA_START
+	DD 0x00000000
+	DD 0x00000000
+	DD DATA_START_RVA + NAME_USER32_DLL - DATA_START
+	DD IDATA_START_RVA + USER32_LOOKUP_TABLE_START - IDATA_START
+
+	; the last entry is 0
+	DD 0x00000000
+	DD 0x00000000
+	DD 0x00000000
+	DD 0x00000000
+	DD 0x00000000
+IMPORT_DIRECTORY_TABLE_END:
+
+IMPORT_LOOKUP_TABLE_START:	; array, 64 numbers
+KERNEL32_LOOKUP_TABLE_START:
+	KERNEL32_EXITPROCESS: DQ 0x0000000000000000 + IDATA_START_RVA + HINT_NAME_TABLE_KERNEL32_EXITPROCESS - IDATA_START
+	; KERNEL32_WRITEFILE: DQ 0x0000000000000000 + IDATA_START_RVA + HINT_NAME_TABLE_KERNEL32_WRITEFILE - IDATA_START
+	DQ 0x0000000000000000 ; the last entry is 0	
+
+USER32_LOOKUP_TABLE_START:
+	; user32.dll MessageBoxA
+	USER32_MESSAGEBOXA: DQ 0x0000000000000000 + IDATA_START_RVA + HINT_NAME_TABLE_USER32_MESSAGEBOXA - IDATA_START
+	DQ 0x0000000000000000 ; the last entry is 0
+IMPORT_LOOKUP_TABLE_END:
+
+HINT_NAME_TABLE_START:
+	; kernel32.dll:ExitProcess()
+HINT_NAME_TABLE_KERNEL32_EXITPROCESS:
+	DW 0x0000	; Hint
+	DB 'ExitProcess', 0 ; Name
+	; DB 0x00	; No need to pad as 'ExitProcess', 0 = 12 (even number)
+	; if odd number, add 0x00 to get an even number of byte
+
+	; kernel32.dll WriteFile()
+	; HINT_NAME_TABLE_KERNEL32_WRITEFILE:
+	; DW 0x0000	; Hint
+	; DB 'WriteFile', 0	;Name
+	; DB 0x00 ; DONT Pad, since ('WriteFile', 0) is an even number aka 10 bytes
+	
+	; user32.dll:MessageBoxA()
+HINT_NAME_TABLE_USER32_MESSAGEBOXA:
+	DW 0x0000	; Hint
+	DB 'MessageBoxA', 0 ; Name
+	; DB 0x00	; no need to pad as 'MessageBoxA', 0 = 12 (even number)
+	; if odd number, add 0x00 to get an even number of byte
+HINT_NAME_TABLE_END:
+IDATA_END:
+
+times IDATA_SIZE_RVA + DATA_SIZE_RVA + TEXT_SIZE_RVA + 0x400 - ($ - FILE_START) DB 0x00
+
+FILE_END:
