@@ -1,0 +1,3 @@
+LIBRARY windows_create_dll_64
+EXPORTS LibMain
+EXPORTS _popup
